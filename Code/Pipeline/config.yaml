@@ -1,0 +1,78 @@
+# FlyBrain pipeline settings.
+#
+# Before running download_codex.py, set your Codex API token as an
+# environment variable (get one from your account page at codex.flywire.ai
+#   set CODEX_API_TOKEN=...        (PowerShell: $env:CODEX_API_TOKEN=...)
+#   export CODEX_API_TOKEN=...     (macOS/Linux)
+
+paths:
+  raw_dir: ../../Data/raw
+  # {max_in_degree} is filled in from the `gather` section below, so each
+  # gather width you try lands in its own folder (Data/k_64, Data/k_128,
+  # ...) instead of overwriting the previous build.
+  processed_dir: ../../Data/k_{max_in_degree}
+
+# Neuron positions
+# coordinates.csv gives marked points in nanometers, and a neuron can have
+# zero, one, or several, build_graph.py averages them into one point per
+# neuron. `center` shifts the whole cloud so its centroid sits at the
+# origin. `normalize` (default) fits the largest extent across all three
+# axes to +/-normalize_to using ONE uniform scale factor. Set normalize: false
+# to use a  fixed `scale` multiplier instead (e.g. 0.001 for nm -> microns).
+position:
+  center: true
+  normalize: true
+  normalize_to: 1.0
+  scale: 0.001
+
+# Subset selection
+# Full FAFB is ~139k neurons / ~3.7M filtered edges.
+subset:
+  # Keep neurons whose `super_class` is in this list. null = everything.
+  # Known super_class values in FlyWire annotations include:
+  #   sensory, central, ascending, descending, motor, endocrine,
+  #   visual_projection, visual_centrifugal, optic, other
+  super_class_include: null
+  # Optional: further restrict to specific neuropil regions. Set to null to
+  # skip this filter. Names must match Codex's `neuropil`/region annotation.
+  neuropil_include: null
+  # Hard cap on neuron count after the filters above. null = no cap.
+  max_neurons: null
+  # Drop edges with fewer than this many synapses. Codex's
+  # connections_princeton file already applies FAFB's own default 5+
+  # synapse threshold upstream, so this only matters if you raise it
+  min_synapse_count: 5
+
+# Signed weights from predicted neurotransmitter
+# Codex predicts a neurotransmitter per connection. There's no universal
+# agreement on sign for every one of these in every circuit, but this is
+# the common simplifying convention used by other connectome-simulation
+# projects: fast ionotropic ACh = excitatory, GABA/Glutamate = inhibitory
+# (glutamate is mixed in real Drosophila circuits but usually inhibitory
+# at the NMJ and often treated as inhibitory in whole-brain sims), and the
+# aminergic/neuromodulatory transmitters are treated as weak/slow and
+# scaled down rather than given a hard sign. Tune freely.
+neurotransmitter_sign:
+  ach: 1.0
+  gaba: -1.0
+  glut: -1.0
+  da: 0.3
+  ser: 0.3
+  oct: 0.3
+  unknown: 0.5
+
+weight:
+  # log1p-compress raw synapse counts before scaling, a few outlier
+  # connections with hundreds of synapses would otherwise dominate.
+  log_compress: true
+  global_scale: 1.0
+
+# Gather width (TouchDesigner POPs)
+# neurons.csv gets esrc0..esrc{K-1} / ew0..ew{K-1} columns: each neuron's
+# own incoming edges (source neuron index + signed weight), padded/capped
+# to a fixed width K so they can become fixed-size POP point-attribute
+# arrays for a GLSL gather step. Neurons with more incoming edges than K
+# keep only the K strongest (by |weight|); meta.json's
+# n_neurons_truncated_by_cap reports how many neurons that affected.
+gather:
+  max_in_degree: 64
