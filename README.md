@@ -1,5 +1,7 @@
 # FlyBrain
 
+![Render from the fly brain point cloud](./Images/flybrain.png)
+
 A TouchDesigner tool that loads the FlyWire fruit-fly connectome ([codex.flywire.ai](https://codex.flywire.ai)) and runs it as a POP network.
 
 Watch the point cloud or use it as a "black box": feed a signal in through one group of neurons and read a different signal back out of another.
