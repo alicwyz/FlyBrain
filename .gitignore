@@ -1,0 +1,11 @@
+Data/raw/*
+!Data/raw/.gitkeep
+
+Data/k_*/*
+!Data/k_64/.gitkeep
+
+*.pyc
+__pycache__/
+
+Backup/
+FlyBrain.*.toe
